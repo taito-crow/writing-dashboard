@@ -72,7 +72,7 @@
   /* ── サマリーカード ── */
   .metrics {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 10px;
   }
   .metric {
@@ -112,7 +112,6 @@
   .metric.today   { --accent-color: var(--accent); }
   .metric.monthly { --accent-color: var(--accent2); }
   .metric.total   { --accent-color: var(--accent4); }
-  .metric.streak  { --accent-color: var(--accent3); }
   .metric.year    { --accent-color: var(--accent3); }
   .metric.week    { --accent-color: var(--accent); }
   .metric.month   { --accent-color: var(--accent2); }
@@ -278,18 +277,6 @@ function calcDailyDiffByWork(snapshots, workKeys) {
   return result;
 }
 
-// 連続執筆日数
-function calcStreak(dailyDiff, today) {
-  let streak = 0;
-  let d = today;
-  while (true) {
-    if ((dailyDiff[d] ?? 0) > 0) {
-      streak++;
-      d = prevDate(d);
-    } else break;
-  }
-  return streak;
-}
 
 // ================================================================
 // カラーパレット（作品ごと）
@@ -422,9 +409,6 @@ async function render() {
   const latestSnap  = snapshots[dates[dates.length - 1]] ?? {};
   const lifeTotal   = Object.values(latestSnap).reduce((a, b) => a + b, 0);
 
-  // 連続執筆日数
-  const streak = hasDiff ? calcStreak(dailyDiff, today) : null;
-
   // 7日間平均（直近7日合計 ÷ 7）
   let weekAvg = null;
   if (hasDiff) {
@@ -485,11 +469,6 @@ async function render() {
         <div class="label">人生累計</div>
         <div class="value">${formatMan(lifeTotal)}</div>
         <div class="unit">文字</div>
-      </div>
-      <div class="metric streak">
-        <div class="label">連続執筆</div>
-        <div class="value">${fmt(streak, v => v)}</div>
-        <div class="unit">日</div>
       </div>
       <div class="metric week">
         <div class="label">過去7日の平均</div>
