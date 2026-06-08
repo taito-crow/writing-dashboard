@@ -117,6 +117,12 @@
   .metric.week    { --accent-color: var(--accent); }
   .metric.month   { --accent-color: var(--accent2); }
 
+  /* スマホ: 2列に折り返す */
+  @media (max-width: 768px) {
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .metric .label { white-space: nowrap; }
+  }
+
   /* ── 棒グラフ ── */
   .chart-wrap {
     background: var(--surface);
