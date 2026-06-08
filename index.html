@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>台東クロウの執筆ダッシュボード</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  /* ── フォント ── */
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  /* ── リセット & ベース ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0f0f13;
+    --surface:   #17171e;
+    --surface2:  #1f1f29;
+    --border:    rgba(255,255,255,0.07);
+    --text:      #e8e6f0;
+    --muted:     #6b6880;
+    --accent:    #8b7fff;
+    --accent2:   #3ecf8e;
+    --accent3:   #ff7c5c;
+    --accent4:   #ffd166;
+    --font:      'Zen Kaku Gothic New', sans-serif;
+    --mono:      'JetBrains Mono', monospace;
+  }
+
+  html { font-size: 15px; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    padding: 2rem 1.5rem 4rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  /* ── ヘッダー ── */
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1rem;
+  }
+  header h1 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+  }
+  header .date {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  /* ── セクションラベル ── */
+  .section-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 2rem 0 0.75rem;
+  }
+
+  /* ── サマリーカード ── */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+  }
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .metric::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent-color, var(--accent));
+    opacity: 0.7;
+  }
+  .metric .label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+    letter-spacing: 0.04em;
+  }
+  .metric .value {
+    font-family: var(--mono);
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1;
+  }
+  .metric .unit {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .metric.today   { --accent-color: var(--accent); }
+  .metric.monthly { --accent-color: var(--accent2); }
+  .metric.total   { --accent-color: var(--accent4); }
+  .metric.streak  { --accent-color: var(--accent3); }
+  .metric.year    { --accent-color: var(--accent3); }
+  .metric.week    { --accent-color: var(--accent); }
+  .metric.month   { --accent-color: var(--accent2); }
+
+  /* ── 棒グラフ ── */
+  .chart-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem 1.25rem 1rem;
+  }
+  .chart-canvas-wrap {
+    position: relative;
+    width: 100%;
+    height: 180px;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .legend-dot {
+    width: 9px; height: 9px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── 草グラフ ── */
+  .grass-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+  }
+  .grass-svg { display: block; }
+  .grass-footer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    font-size: 0.68rem;
+    color: var(--muted);
+  }
+  .grass-footer .swatches { display: flex; gap: 3px; }
+  .grass-footer .swatch {
+    width: 11px; height: 11px;
+    border-radius: 2px;
+  }
+
+  /* ── ノーデータ ── */
+  .no-data {
+    text-align: center;
+    padding: 3rem;
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📝 台東クロウの執筆ダッシュボード</h1>
+  <span class="date" id="header-date">—</span>
+</header>
+
+<div id="app">
+  <div class="no-data">データを読み込み中…</div>
+</div>
+
+<script>
+// ================================================================
+// データ読み込み（data.js を script タグで読み込む方式）
+// ================================================================
+async function loadData() {
+  // data.js が <script> で読み込まれていれば window.WRITING_DATA に入っている
+  if (window.WRITING_DATA) return window.WRITING_DATA;
+  // 未ロードの場合は動的に読み込む
+  return new Promise((resolve) => {
+    const s = document.createElement('script');
+    s.src = './data.js?t=' + Date.now();
+    s.onload  = () => resolve(window.WRITING_DATA ?? null);
+    s.onerror = () => resolve(null);
+    document.head.appendChild(s);
+  });
+}
+
+// ================================================================
+// 計算ユーティリティ
+// ================================================================
+function toJST(dateStr) {
+  return new Date(dateStr + 'T00:00:00+09:00');
+}
+
+function todayJST() {
+  const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function prevDate(dateStr) {
+  const d = toJST(dateStr);
+  d.setDate(d.getDate() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function nextDate(dateStr) {
+  const d = toJST(dateStr);
+  d.setDate(d.getDate() + 1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function formatMan(n) {
+  if (n >= 10000) return (n / 10000).toFixed(1) + '万';
+  return n.toLocaleString();
+}
+
+// 日別差分（全作品合計）を返す — calcDailyDiffByWork と同じロジックで計算し整合性を保つ
+// { "YYYY-MM-DD": 文字数増分 }
+function calcDailyDiff(snapshots, workKeys) {
+  const dates = Object.keys(snapshots).sort();
+  const diff = {};
+  for (const d of dates) diff[d] = 0;
+  for (const w of workKeys) {
+    for (let i = 1; i < dates.length; i++) {
+      const d    = dates[i];
+      const prev = dates[i - 1];
+      const t = snapshots[d]?.[w]    ?? 0;
+      const p = snapshots[prev]?.[w] ?? 0;
+      diff[d] += Math.max(0, t - p);
+    }
+  }
+  return diff;
+}
+
+// 作品別・日別差分
+function calcDailyDiffByWork(snapshots, workKeys) {
+  const dates = Object.keys(snapshots).sort();
+  const result = {}; // { work: { date: diff } }
+  for (const w of workKeys) result[w] = {};
+  for (let i = 1; i < dates.length; i++) {
+    const today = dates[i];
+    const prev  = dates[i - 1];
+    for (const w of workKeys) {
+      const t = snapshots[today][w] ?? 0;
+      const p = snapshots[prev][w]  ?? 0;
+      result[w][today] = Math.max(0, t - p);
+    }
+  }
+  return result;
+}
+
+// 連続執筆日数
+function calcStreak(dailyDiff, today) {
+  let streak = 0;
+  let d = today;
+  while (true) {
+    if ((dailyDiff[d] ?? 0) > 0) {
+      streak++;
+      d = prevDate(d);
+    } else break;
+  }
+  return streak;
+}
+
+// ================================================================
+// カラーパレット（作品ごと）
+// ================================================================
+const WORK_COLORS = ['#8b7fff','#3ecf8e','#ff7c5c','#ffd166','#67d7e6','#f097d6'];
+
+// ================================================================
+// 草グラフ描画
+// ================================================================
+function buildGrass(dailyDiff, today) {
+  const WEEKS  = 53;
+  const CELL   = 12;
+  const GAP    = 3;
+  const OX     = 26;
+  const OY     = 18;
+  const W      = OX + WEEKS * (CELL + GAP) + 4;
+  const H      = OY + 7 * (CELL + GAP) + 4;
+
+  // 草グラフの色（紫系）
+  const COLORS = ['#1f1f29','#3d3472','#5a4eb8','#7c6ee8','#a99fff'];
+
+  // 文字数しきい値
+  function level(chars) {
+    if (chars <= 0)    return 0;
+    if (chars < 1000)  return 1;
+    if (chars < 3000)  return 2;
+    if (chars < 5000)  return 3;
+    return 4;
+  }
+
+  const DAY_LABELS = ['日','月','火','水','木','金','土'];
+
+  let svg = `<svg class="grass-svg" width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMid meet" role="img">
+<title>執筆活動グラフ（過去1年間）</title>
+<desc>日別執筆文字数を草グラフで表示</desc>`;
+
+  // 曜日ラベル
+  for (let d = 0; d < 7; d++) {
+    if (d % 2 === 0) {
+      svg += `<text x="${OX-4}" y="${OY + d*(CELL+GAP) + CELL*0.78}" text-anchor="end" font-size="8" font-family="'Zen Kaku Gothic New',sans-serif" fill="#6b6880">${DAY_LABELS[d]}</text>`;
+    }
+  }
+
+  // 今日の曜日を基準に週を並べる
+  const todayDate = toJST(today);
+  const todayDow  = todayDate.getDay(); // 0=日
+
+  for (let w = 0; w < WEEKS; w++) {
+    for (let d = 0; d < 7; d++) {
+      // 何日前か（正: 過去, 負: 未来）
+      const daysAgo = (WEEKS - 1 - w) * 7 + todayDow - d;
+      // 実際の日付
+      const cellDate = new Date(todayDate);
+      cellDate.setDate(cellDate.getDate() - daysAgo);
+      const dateStr = `${cellDate.getFullYear()}-${String(cellDate.getMonth()+1).padStart(2,'0')}-${String(cellDate.getDate()).padStart(2,'0')}`;
+
+      const isFuture = daysAgo < 0;
+      // 執筆日 d の文字数はスナップショット d+1 の差分に記録されている
+      const chars = isFuture ? 0 : (dailyDiff[nextDate(dateStr)] ?? -1);
+      const lv    = chars < 0 ? 0 : level(chars);
+      const fill  = isFuture ? 'transparent' : COLORS[lv];
+      const stroke = chars < 0 || isFuture ? '#2a2a35' : 'none';
+
+      const x = OX + w * (CELL + GAP);
+      const y = OY + d * (CELL + GAP);
+      const label = isFuture ? '' : chars < 0 ? 'データなし' : `${chars.toLocaleString()}字`;
+
+      svg += `<rect x="${x}" y="${y}" width="${CELL}" height="${CELL}" rx="2" fill="${fill}" stroke="${stroke}" stroke-width="0.5"><title>${dateStr}${label ? ': ' + label : ''}</title></rect>`;
+    }
+
+    // 月ラベル（週の日曜日が月初めなら表示）
+    const sundayDate = new Date(todayDate);
+    sundayDate.setDate(sundayDate.getDate() - (WEEKS - 1 - w) * 7 - todayDow);
+    if (sundayDate.getDate() <= 7) {
+      const x = OX + w * (CELL + GAP) + CELL / 2;
+      svg += `<text x="${x}" y="${OY - 5}" text-anchor="middle" font-size="8" font-family="'Zen Kaku Gothic New',sans-serif" fill="#6b6880">${sundayDate.getMonth()+1}月</text>`;
+    }
+  }
+
+  svg += '</svg>';
+  return svg;
+}
+
+// ================================================================
+// メインレンダリング
+// ================================================================
+async function render() {
+  const today = todayJST();
+  document.getElementById('header-date').textContent = today.replace(/-/g, ' / ');
+
+  const data = await loadData();
+  const app  = document.getElementById('app');
+
+  if (!data || !data.snapshots || Object.keys(data.snapshots).length < 1) {
+    app.innerHTML = `<div class="no-data">
+      <p>まだデータが集まっていません。</p>
+      <p style="margin-top:.5rem;font-size:.8rem;">GitHub Actions が初回実行されると表示されます。</p>
+    </div>`;
+    return;
+  }
+
+  const snapshots = data.snapshots;
+  const works     = data.works ?? {};
+  const workKeys  = Object.keys(works);
+  const dates     = Object.keys(snapshots).sort();
+
+  // 日別差分
+  const dailyDiff       = calcDailyDiff(snapshots, workKeys);
+  const dailyDiffByWork = calcDailyDiffByWork(snapshots, workKeys);
+
+  // スナップショットが1件のみの場合は差分系を「—」で表示
+  const hasDiff = dates.length >= 2;
+
+  // ── サマリー計算 ──
+  const todayChars = hasDiff ? (dailyDiff[today] ?? 0) : null;
+
+  // 今月合計
+  const thisMonth = today.slice(0, 7);
+  const monthTotal = hasDiff
+    ? Object.entries(dailyDiff).filter(([d]) => d.startsWith(thisMonth)).reduce((s, [, v]) => s + v, 0)
+    : null;
+
+  // 今年累計
+  const thisYear = today.slice(0, 4);
+  const yearTotal = hasDiff
+    ? Object.entries(dailyDiff).filter(([d]) => d.startsWith(thisYear)).reduce((s, [, v]) => s + v, 0)
+    : null;
+
+  // 人生累計（最新スナップショットの全作品合計）
+  const latestSnap  = snapshots[dates[dates.length - 1]] ?? {};
+  const lifeTotal   = Object.values(latestSnap).reduce((a, b) => a + b, 0);
+
+  // 連続執筆日数
+  const streak = hasDiff ? calcStreak(dailyDiff, today) : null;
+
+  // 7日間平均（直近7日合計 ÷ 7）
+  let weekAvg = null;
+  if (hasDiff) {
+    let weekSum = 0;
+    for (let i = 0; i <= 6; i++) {
+      const d = new Date(toJST(today));
+      d.setDate(d.getDate() - i);
+      const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      weekSum += dailyDiff[ds] ?? 0;
+    }
+    weekAvg = Math.round(weekSum / 7);
+  }
+
+  // 30日間平均（直近30日合計 ÷ 30）
+  let monthAvg = null;
+  if (hasDiff) {
+    let sum30 = 0;
+    for (let i = 0; i <= 29; i++) {
+      const d = new Date(toJST(today));
+      d.setDate(d.getDate() - i);
+      const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      sum30 += dailyDiff[ds] ?? 0;
+    }
+    monthAvg = Math.round(sum30 / 30);
+  }
+
+  // null を「—」に変換するヘルパー
+  const fmt = (v, fn) => v === null ? '—' : fn(v);
+
+  // ── 過去30日の棒グラフ用データ ──
+  const last30 = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(toJST(today));
+    d.setDate(d.getDate() - i);
+    last30.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+  }
+
+  // ── HTML構築 ──
+  app.innerHTML = `
+    <p class="section-label">サマリー</p>
+    <div class="metrics">
+      <div class="metric today">
+        <div class="label">昨日</div>
+        <div class="value">${fmt(todayChars, v => v.toLocaleString())}</div>
+        <div class="unit">文字</div>
+      </div>
+      <div class="metric monthly">
+        <div class="label">今月合計</div>
+        <div class="value">${fmt(monthTotal, v => v.toLocaleString())}</div>
+        <div class="unit">文字</div>
+      </div>
+      <div class="metric year">
+        <div class="label">今年累計</div>
+        <div class="value">${fmt(yearTotal, v => v.toLocaleString())}</div>
+        <div class="unit">文字</div>
+      </div>
+      <div class="metric total">
+        <div class="label">人生累計</div>
+        <div class="value">${formatMan(lifeTotal)}</div>
+        <div class="unit">文字</div>
+      </div>
+      <div class="metric streak">
+        <div class="label">連続執筆</div>
+        <div class="value">${fmt(streak, v => v)}</div>
+        <div class="unit">日</div>
+      </div>
+      <div class="metric week">
+        <div class="label">過去7日の平均</div>
+        <div class="value">${fmt(weekAvg, v => v.toLocaleString())}</div>
+        <div class="unit">文字 / 日</div>
+      </div>
+      <div class="metric month">
+        <div class="label">過去30日の平均</div>
+        <div class="value">${fmt(monthAvg, v => v.toLocaleString())}</div>
+        <div class="unit">文字 / 日</div>
+      </div>
+    </div>
+
+    <p class="section-label">過去30日の執筆文字数</p>
+    <div class="chart-wrap">
+      <div class="chart-canvas-wrap">
+        <canvas id="barChart" role="img" aria-label="過去30日の作品別執筆文字数の積み上げ棒グラフ">作品別の日別文字数推移</canvas>
+      </div>
+      <div class="legend" id="chart-legend"></div>
+    </div>
+
+    <p class="section-label">執筆活動（過去1年間）</p>
+    <div class="grass-wrap">
+      ${buildGrass(dailyDiff, today)}
+      <div class="grass-footer">
+        <span>少</span>
+        <div class="swatches">
+          <div class="swatch" style="background:#1f1f29;border:1px solid #2a2a35"></div>
+          <div class="swatch" style="background:#3d3472"></div>
+          <div class="swatch" style="background:#5a4eb8"></div>
+          <div class="swatch" style="background:#7c6ee8"></div>
+          <div class="swatch" style="background:#a99fff"></div>
+        </div>
+        <span>多</span>
+      </div>
+    </div>
+  `;
+
+  // ── Chart.js 棒グラフ ──
+  // 過去30日に1文字以上書いた作品のみ表示
+  const activeWorkKeys = workKeys.filter(w =>
+    last30.some(d => (dailyDiffByWork[w]?.[d] ?? 0) > 0)
+  );
+  const datasets = activeWorkKeys.map((w, i) => ({
+    label: works[w] ?? w,
+    data:  last30.map(d => dailyDiffByWork[w]?.[d] ?? 0),
+    backgroundColor: WORK_COLORS[i % WORK_COLORS.length],
+    stack: 's',
+  }));
+
+  // ラベルはスナップショット日付 - 1日（実際の執筆日）で表示
+  const labels30 = last30.map(d => {
+    const prev = toJST(d);
+    prev.setDate(prev.getDate() - 1);
+    return `${prev.getMonth()+1}/${prev.getDate()}`;
+  });
+
+  new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: { labels: labels30, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}字`
+          }
+        }
+      },
+      scales: {
+        x: {
+          stacked: true,
+          ticks: {
+            autoSkip: true,
+            maxTicksLimit: 10,
+            font: { size: 10, family: "'JetBrains Mono', monospace" },
+            color: '#6b6880',
+          },
+          grid: { color: 'rgba(255,255,255,0.04)' }
+        },
+        y: {
+          stacked: true,
+          ticks: {
+            font: { size: 10, family: "'JetBrains Mono', monospace" },
+            color: '#6b6880',
+            callback: v => v >= 1000 ? (v/1000).toFixed(0)+'K' : v,
+          },
+          grid: { color: 'rgba(255,255,255,0.04)' }
+        }
+      }
+    }
+  });
+
+  // カスタム凡例
+  const legendEl = document.getElementById('chart-legend');
+  activeWorkKeys.forEach((w, i) => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<div class="legend-dot" style="background:${WORK_COLORS[i % WORK_COLORS.length]}"></div>${works[w] ?? w}`;
+    legendEl.appendChild(item);
+  });
+}
+
+render();
+</script>
+</body>
+</html>
