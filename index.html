@@ -460,16 +460,6 @@ async function render() {
         <div class="value">${fmt(monthTotal, v => v.toLocaleString())}</div>
         <div class="unit">文字</div>
       </div>
-      <div class="metric year">
-        <div class="label">今年累計</div>
-        <div class="value">${fmt(yearTotal, v => v.toLocaleString())}</div>
-        <div class="unit">文字</div>
-      </div>
-      <div class="metric total">
-        <div class="label">人生累計</div>
-        <div class="value">${formatMan(lifeTotal)}</div>
-        <div class="unit">文字</div>
-      </div>
       <div class="metric week">
         <div class="label">過去7日の平均</div>
         <div class="value">${fmt(weekAvg, v => v.toLocaleString())}</div>
@@ -479,6 +469,16 @@ async function render() {
         <div class="label">過去30日の平均</div>
         <div class="value">${fmt(monthAvg, v => v.toLocaleString())}</div>
         <div class="unit">文字 / 日</div>
+      </div>
+      <div class="metric year">
+        <div class="label">今年累計</div>
+        <div class="value">${fmt(yearTotal, v => v.toLocaleString())}</div>
+        <div class="unit">文字</div>
+      </div>
+      <div class="metric total">
+        <div class="label">人生累計</div>
+        <div class="value">${formatMan(lifeTotal)}</div>
+        <div class="unit">文字</div>
       </div>
     </div>
 
