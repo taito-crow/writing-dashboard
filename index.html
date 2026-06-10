@@ -104,6 +104,11 @@
     color: var(--text);
     line-height: 1;
   }
+  .metric .value.pending {
+    font-size: 0.95rem;
+    color: var(--muted);
+    font-family: var(--font);
+  }
   .metric .unit {
     font-size: 0.7rem;
     color: var(--muted);
@@ -390,8 +395,15 @@ async function render() {
   // スナップショットが1件のみの場合は差分系を「—」で表示
   const hasDiff = dates.length >= 2;
 
+  // 最新スナップショットが今日のものか（未集計判定）
+  // 「昨日」の文字数 = 今日のスナップショット − 昨日のスナップショット
+  // 最新が今日でなければ、まだ集計されていない（集計待ち）
+  const latestDate = dates[dates.length - 1];
+  const isCollected = latestDate >= today;
+
   // ── サマリー計算 ──
-  const todayChars = hasDiff ? (dailyDiff[today] ?? 0) : null;
+  // 昨日の文字数: 集計済みなら値、未集計なら「集計待ち」
+  const todayChars = !hasDiff ? null : (isCollected ? (dailyDiff[today] ?? 0) : 'PENDING');
 
   // 今月合計
   const thisMonth = today.slice(0, 7);
@@ -452,8 +464,8 @@ async function render() {
     <div class="metrics">
       <div class="metric today">
         <div class="label">昨日</div>
-        <div class="value">${fmt(todayChars, v => v.toLocaleString())}</div>
-        <div class="unit">文字</div>
+        <div class="value${todayChars === 'PENDING' ? ' pending' : ''}">${todayChars === 'PENDING' ? '集計待ち' : fmt(todayChars, v => v.toLocaleString())}</div>
+        <div class="unit">${todayChars === 'PENDING' ? '&nbsp;' : '文字'}</div>
       </div>
       <div class="metric monthly">
         <div class="label">今月合計</div>
