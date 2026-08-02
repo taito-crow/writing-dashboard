@@ -405,16 +405,21 @@ async function render() {
   // 昨日の文字数: 集計済みなら値、未集計なら「集計待ち」
   const todayChars = !hasDiff ? null : (isCollected ? (dailyDiff[today] ?? 0) : 'PENDING');
 
-  // 今月合計
+  // 今月合計（dailyDiff のキーはスナップショット日 = 執筆日の翌日なので、
+  // 執筆日ベースに直してからフィルタする）
   const thisMonth = today.slice(0, 7);
   const monthTotal = hasDiff
-    ? Object.entries(dailyDiff).filter(([d]) => d.startsWith(thisMonth)).reduce((s, [, v]) => s + v, 0)
+    ? Object.entries(dailyDiff)
+        .filter(([d]) => prevDate(d).startsWith(thisMonth))
+        .reduce((s, [, v]) => s + v, 0)
     : null;
 
-  // 今年累計
+  // 今年累計（同上）
   const thisYear = today.slice(0, 4);
   const yearTotal = hasDiff
-    ? Object.entries(dailyDiff).filter(([d]) => d.startsWith(thisYear)).reduce((s, [, v]) => s + v, 0)
+    ? Object.entries(dailyDiff)
+        .filter(([d]) => prevDate(d).startsWith(thisYear))
+        .reduce((s, [, v]) => s + v, 0)
     : null;
 
   // 人生累計（最新スナップショットの全作品合計）
